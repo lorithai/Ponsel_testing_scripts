@@ -1,0 +1,41 @@
+# -*- coding: utf-8 -*-
+from pymodbus.client.serial import ModbusSerialClient
+from pymodbus.constants import Endian
+from pymodbus.payload import BinaryPayloadDecoder
+
+# Modbus RTU parameters
+port = 'COM5'         # e.g., COM3 on Windows or /dev/ttyUSB0 on Linux
+baudrate = 9600
+slave_id = 20                  # Modbus address of the pH sensor
+
+# Connect to Modbus RTU client
+client = ModbusSerialClient(
+    port=port,
+    baudrate=baudrate,
+    stopbits=2,
+    bytesize=8,
+    parity='N',
+    timeout=3
+)
+
+if client.connect():
+    print("Connected to PONSEL pH sensor.")
+
+    # Read input registers (example: read 2 registers starting at address 0x0000)
+    # Replace 0x0000 with the register address for pH value
+    result = client.read_holding_registers(address=83, count=2, slave=slave_id)
+
+    if not result.isError():
+        decoder = BinaryPayloadDecoder.fromRegisters(
+            result.registers,
+            byteorder=Endian.BIG,
+            wordorder=Endian.BIG
+        )
+        ph_value = decoder.decode_32bit_float()
+        print(f"pH Value: {ph_value:.2f}")
+    else:
+        print(f"Error reading registers: {result}")
+
+    client.close()
+else:
+    print("Failed to connect to sensor.")
